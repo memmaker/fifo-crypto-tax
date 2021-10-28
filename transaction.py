@@ -2,7 +2,8 @@ from decimal import Decimal
 
 from config import config
 
-c = lambda v: moneyfmt(v)
+def remove_exponent(d):
+    return d.quantize(Decimal(1)) if d == d.to_integral() else d.normalize()
 
 def moneyfmt(value, places=2, curr='', sep='.', dp=',',
              pos='', neg='-', trailneg=''):
@@ -70,3 +71,5 @@ class Transaction:
 
     def info(self):
         return "%s: %s %s -> %s %s @ %s (fees: %s, ref: %s)" % (self.timestamp, self.source_amount, self.source_currency, self.target_amount, self.target_currency, self.exchange_rate, c(self.fees), self.reference)
+
+c = moneyfmt

@@ -57,9 +57,9 @@
                 <td>${tx.display_id}</td>
                 <td>${tx.timestamp.strftime("%d.%m.%Y")}</td>
                 <td>${tx.currency}</td>
-                <td>${round(tx.exchange_rate, 4)}</td>
+                <td>${c(tx.exchange_rate)}</td>
                 <td>${c(tx.fiat_amount)}</td>
-                <td>${tx.crypto_amount}</td>
+                <td>${fc(tx.crypto_amount.normalize())}</td>
                 <td>${c(tx.fees)}</td>
                 <td>${c(tx.win_or_loss)}</td>
                 <td>${tx.reference}</td>
@@ -88,7 +88,7 @@
             <tbody>
                 <tr>
                     <td py:for="name, balance in accounts[year].items()">
-                        ${c(balance)}
+                        ${balance}
                     </td>
                 </tr>
             </tbody>

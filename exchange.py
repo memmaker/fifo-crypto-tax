@@ -8,7 +8,7 @@ from binance_conversion import Binance_Conversion_Converter
 from bitcoin_de import BDE_Converter
 from coinbase import Coinbase_Converter
 from config import config
-from transaction import Transaction, c
+from transaction import Transaction, c, remove_exponent
 from genshi.template import TemplateLoader
 from enum import Enum
 
@@ -122,7 +122,7 @@ class ExchangeCalculator:
             auto_reload=True
         )
         tmpl = loader.load('tax_report.html')
-        html_output = tmpl.generate(accounts=self.snapshots, tax_relevant=self.tax_relevant, totals=self.totals, c=c).render('html', doctype='html')
+        html_output = tmpl.generate(accounts=self.snapshots, tax_relevant=self.tax_relevant, totals=self.totals, c=c, fc=remove_exponent).render('html', doctype='html')
 
         with open(os.path.join(output_dir, "report.html"), "w") as file:
             file.write(html_output)
@@ -205,7 +205,10 @@ class ExchangeCalculator:
         if year not in self.snapshots:
             self.snapshots[year] = dict()
         for name, acc in self.accounts.items():
-            self.snapshots[year][acc.name] = Decimal(acc.balance)
+            if acc.name == config['fiat_currency']:
+                self.snapshots[year][acc.name] = c(acc.balance)
+            else:
+                self.snapshots[year][acc.name] = acc.balance.normalize()
 
 
 if __name__ == "__main__":
