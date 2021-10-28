@@ -12,9 +12,9 @@ from genshi.template import TemplateLoader
 from enum import Enum
 
 class TaxType(Enum):
-    Buy = 0
-    Sell = 1
-    External = 3
+    Kauf = 0
+    Verk = 1
+    Ext = 3
 
 def ensure_key(map, date_of_record):
     year = date_of_record.year
@@ -37,7 +37,7 @@ class TransactionWithTaxInfo:
         self.display_id = self.type.name + '-' + str(self.tax_id)
         self.long_time = False
         self.source_id = self.source_transaction.display_id if self.source_transaction else "n/a"
-        if type == TaxType.Sell:
+        if type == TaxType.Verk:
             one_year = relativedelta(years=1)
             threshold = self.timestamp - one_year
             if source_transaction.timestamp <= threshold:
@@ -47,7 +47,8 @@ class TransactionWithTaxInfo:
 class Account:
     def __init__(self, name, initial_funding=0.0):
         self.name = name
-        self.initial_funding = initial_funding
+        self.initial_funding = Decimal(initial_funding)
+        self.external_balance = Decimal(0.0)
         self.balance = Decimal(0.0)
 
     def add_funds(self, amount, tx_id):
@@ -63,6 +64,11 @@ class Account:
     def snapshot(self):
         return (self.name, self.balance)
 
+    def track_external_transfer(self, change):
+        self.external_balance += change
+
+    def corrected_balance(self):
+        return self.initial_funding + self.external_balance + self.balance
 
 class FifoAccount(Account):
     def __init__(self, name, initial_funding=0.0):
@@ -159,23 +165,21 @@ class ExchangeCalculator:
                 currency = tx.currency
                 if currency not in self.accounts:
                     self.accounts[currency] = FifoAccount(currency)
-                print(self.accounts[currency].info())
                 change = tx.change_amount
                 if change < Decimal(0):
-                    self.accounts[currency].remove_funds(change.copy_abs())
-                    external_tax_tx = TransactionWithTaxInfo(buy_tax_id, TaxType.External, tx.timestamp, tx.currency,
+                    self.accounts[currency].track_external_transfer(change)
+                    external_tax_tx = TransactionWithTaxInfo(external_id, TaxType.Ext, tx.timestamp, tx.currency,
                                                              Decimal(0), Decimal(0), Decimal(0),
                                                              change, tx.reference, Decimal(0), None)
                     self.tax_relevant[tx.timestamp.year].append(external_tax_tx)
-                    buy_tax_id += 1
+                    external_id += 1
                 else:
-                    external_tax_tx = TransactionWithTaxInfo(buy_tax_id, TaxType.External, tx.timestamp, tx.currency,
+                    external_tax_tx = TransactionWithTaxInfo(external_id, TaxType.Ext, tx.timestamp, tx.currency,
                                                         Decimal(0), Decimal(0), Decimal(0),
                                                         change, tx.reference, Decimal(0), None)
-                    self.accounts[currency].add_funds(change.copy_abs(), buy_tax_id)
-                    self.buy_map[buy_tax_id] = external_tax_tx
+                    self.accounts[currency].track_external_transfer(change)
                     self.tax_relevant[tx.timestamp.year].append(external_tax_tx)
-                    buy_tax_id += 1
+                    external_id += 1
                 continue
 
             list_of_buy_transactions = []
@@ -208,7 +212,7 @@ class ExchangeCalculator:
                     sell_price = amount_of_tx * tx.exchange_rate
 
                     delta_amount = sell_price - buy_price
-                    tax_tx = TransactionWithTaxInfo(sell_tax_id, TaxType.Sell, tx.timestamp, tx.source_currency, delta_amount,
+                    tax_tx = TransactionWithTaxInfo(sell_tax_id, TaxType.Verk, tx.timestamp, tx.source_currency, delta_amount,
                                                     tx.exchange_rate,
                                                     sell_price, amount_of_tx, tx.reference, tx.fees,
                                                     buy_tx)
@@ -216,7 +220,7 @@ class ExchangeCalculator:
                     sell_tax_id += 1
             elif is_buy:
                 ensure_key(self.tax_relevant, tx.timestamp)
-                buy_tax_tx = TransactionWithTaxInfo(buy_tax_id, TaxType.Buy, tx.timestamp, tx.target_currency, Decimal(0), tx.exchange_rate, tx.source_amount, tx.target_amount, tx.reference, tx.fees, None)
+                buy_tax_tx = TransactionWithTaxInfo(buy_tax_id, TaxType.Kauf, tx.timestamp, tx.target_currency, Decimal(0), tx.exchange_rate, tx.source_amount, tx.target_amount, tx.reference, tx.fees, None)
                 self.tax_relevant[tx.timestamp.year].append(buy_tax_tx)
                 self.buy_map[buy_tax_id] = buy_tax_tx
                 buy_tax_id += 1
@@ -230,9 +234,9 @@ class ExchangeCalculator:
             self.snapshots[year] = dict()
         for name, acc in self.accounts.items():
             if acc.name == config['fiat_currency']:
-                self.snapshots[year][acc.name] = c(acc.balance)
+                self.snapshots[year][acc.name] = c(acc.corrected_balance())
             else:
-                self.snapshots[year][acc.name] = acc.balance.normalize()
+                self.snapshots[year][acc.name] = acc.corrected_balance().normalize()
 
 
 if __name__ == "__main__":

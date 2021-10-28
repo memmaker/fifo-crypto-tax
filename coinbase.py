@@ -9,12 +9,6 @@ class Coinbase_Converter:
 
     def __init__(self, path_to_csv):
         self.filename = path_to_csv
-        self.currency_map = {
-            'BTC': 'btc',
-            'ADA': 'ada',
-            'SHIB': 'shib',
-            'DOT': 'dot'
-        }
 
     def process(self):
         all_transactions = list()
@@ -23,7 +17,7 @@ class Coinbase_Converter:
             for row in reader:
                 if row['Transaction Type'] == 'Buy':
                     source_currency = config['fiat_currency']
-                    target_currency = self.currency_map[row['Asset']]
+                    target_currency = row['Asset']
 
                     source_amount = Decimal(row['Total (inclusive of fees)'])
                     target_amount = Decimal(row['Quantity Transacted'])
@@ -41,7 +35,7 @@ class Coinbase_Converter:
                     })
                     all_transactions.append(buy_tx)
                 elif row['Transaction Type'] == 'Sell':
-                    source_currency = self.currency_map[row['Asset']]
+                    source_currency = row['Asset']
                     target_currency = config['fiat_currency']
 
                     source_amount = Decimal(row['Quantity Transacted'])

@@ -1,3 +1,3 @@
 config = {
-    'fiat_currency': 'euro'
+    'fiat_currency': 'Euro'
 }

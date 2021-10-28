@@ -2,6 +2,7 @@ import csv
 import datetime
 from decimal import Decimal
 
+from config import config
 from transaction import Transaction, ExternalTransaction
 
 
@@ -9,10 +10,6 @@ class BDE_Converter:
 
     def __init__(self, path_to_csv):
         self.filename = path_to_csv
-        self.currency_map = {
-            'BTC': 'btc',
-            'ETH': 'eth'
-        }
     def process(self):
         all_transactions = list()
         with open(self.filename, newline='') as csvfile:
@@ -20,8 +17,8 @@ class BDE_Converter:
             for row in reader:
                 currency = row['Währung']
                 if row['Typ'] == 'Kauf':
-                    source_currency = 'euro'
-                    target_currency = self.currency_map[currency]
+                    source_currency = config['fiat_currency']
+                    target_currency = currency
 
                     source_amount = Decimal(row['Menge vor Gebühr'])
                     target_amount = Decimal(row['%s nach Bitcoin.de-Gebühr' % currency])
@@ -43,8 +40,8 @@ class BDE_Converter:
                     })
                     all_transactions.append(buy_tx)
                 elif row['Typ'] == 'Verkauf':
-                    source_currency = self.currency_map[currency]
-                    target_currency = 'euro'
+                    source_currency = currency
+                    target_currency = config['fiat_currency']
 
                     source_amount = Decimal(row['%s vor Gebühr' % currency])
                     target_amount = Decimal(row['Menge nach Bitcoin.de-Gebühr'])  # does not contain fees
@@ -66,8 +63,8 @@ class BDE_Converter:
                     all_transactions.append(sell_tx)
                 elif row['Typ'] in ['Einzahlung', 'Auszahlung', 'Netzwerk-Gebühr']:
                     change_amount = Decimal(row['Zu- / Abgang'])
-                    reference = "Bitcoin.de (%s)" % row['Referenz']
+                    reference = "Bitcoin.de (%s…)" % row['Referenz'][:6]
                     timestamp = datetime.datetime.strptime(row['Datum'], '%Y-%m-%d %H:%M:%S')
-                    all_transactions.append(ExternalTransaction(timestamp, self.currency_map[currency], change_amount, reference))
+                    all_transactions.append(ExternalTransaction(timestamp, currency, change_amount, reference))
         return all_transactions
 

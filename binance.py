@@ -10,14 +10,7 @@ class Binance_Converter:
 
     def __init__(self, path_to_csv):
         self.filename = path_to_csv
-        self.currency_map = {
-            'BTTEUR': 'btt',
-            'DOGEEUR': 'doge',
-            'AVAXEUR': 'avax',
-            'DOTEUR': 'dot',
-            'BNBEUR': 'bnb',
-            'ADAEUR': 'ada',
-        }
+        self.currency_map = lambda c: c.replace('EUR', '')
 
     def process(self):
         all_transactions = list()
@@ -27,7 +20,7 @@ class Binance_Converter:
             for row in reader:
                 if row['Side'] == 'BUY':
                     source_currency = config['fiat_currency']
-                    target_currency = self.currency_map[row['Pair']]
+                    target_currency = self.currency_map(row['Pair'])
 
                     source_amount = parse(row['Amount'])
                     target_amount = parse(row['Executed'])
@@ -45,7 +38,7 @@ class Binance_Converter:
                     })
                     all_transactions.append(buy_tx)
                 elif row['Side'] == 'SELL':
-                    source_currency = self.currency_map[row['Pair']]
+                    source_currency = self.currency_map(row['Pair'])
                     target_currency = config['fiat_currency']
 
                     source_amount = parse(row['Executed'])

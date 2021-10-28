@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from config import config
-from transaction import Transaction
+from transaction import Transaction, ExternalTransaction
 import re
 
 
@@ -55,5 +55,11 @@ class Custom_Converter:
                         'reference': row['Reference']
                     })
                     all_transactions.append(sell_tx)
+                elif row['Type'] == 'Transfer':
+                    change_amount = Decimal(row['Amount_Crypto'])
+                    reference = row['Reference']
+                    timestamp = datetime.strptime(row['Timestamp'], "%Y-%m-%d %H:%M:%S")
+                    all_transactions.append(
+                        ExternalTransaction(timestamp, row['Currency'], change_amount, reference))
         return all_transactions
 
