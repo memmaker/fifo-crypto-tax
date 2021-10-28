@@ -1,5 +1,6 @@
 import csv
 import datetime
+from decimal import Decimal
 
 from transaction import Transaction
 
@@ -21,11 +22,11 @@ class BDE_Converter:
                     source_currency = 'euro'
                     target_currency = self.currency_map[currency]
 
-                    source_amount = float(row['Menge vor Gebühr'])
-                    target_amount = float(row['%s nach Bitcoin.de-Gebühr' % currency])
-                    amount_before_fee = float(row['%s vor Gebühr' % currency])
+                    source_amount = Decimal(row['Menge vor Gebühr'])
+                    target_amount = Decimal(row['%s nach Bitcoin.de-Gebühr' % currency])
+                    amount_before_fee = Decimal(row['%s vor Gebühr' % currency])
                     fee_target_currency = amount_before_fee - target_amount
-                    exchange_rate = float(row['Kurs'])
+                    exchange_rate = Decimal(row['Kurs'])
                     fees = fee_target_currency * exchange_rate
                     buy_tx = Transaction({
                         'timestamp':  datetime.datetime.strptime(row['Datum'], '%Y-%m-%d %H:%M:%S'),
@@ -39,15 +40,14 @@ class BDE_Converter:
 
                         'reference': "Bitcoin.de (%s)" % row['Referenz']
                     })
-                    print(buy_tx.info())
                     all_transactions.append(buy_tx)
                 elif row['Typ'] == 'Verkauf':
                     source_currency = self.currency_map[currency]
                     target_currency = 'euro'
 
-                    source_amount = float(row['%s vor Gebühr' % currency])
-                    target_amount = float(row['Menge nach Bitcoin.de-Gebühr'])  # does not contain fees
-                    amount_before_fee = float(row['Menge vor Gebühr'])
+                    source_amount = Decimal(row['%s vor Gebühr' % currency])
+                    target_amount = Decimal(row['Menge nach Bitcoin.de-Gebühr'])  # does not contain fees
+                    amount_before_fee = Decimal(row['Menge vor Gebühr'])
                     fees = amount_before_fee - target_amount
 
                     sell_tx = Transaction({
@@ -62,7 +62,6 @@ class BDE_Converter:
 
                         'reference': "Bitcoin.de (%s)" % row['Referenz']
                     })
-                    print(sell_tx.info())
                     all_transactions.append(sell_tx)
         return all_transactions
 

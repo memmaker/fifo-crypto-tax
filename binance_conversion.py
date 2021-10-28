@@ -1,5 +1,6 @@
 import csv
 from datetime import datetime
+from decimal import Decimal
 
 from config import config
 from transaction import Transaction
@@ -20,7 +21,7 @@ class Binance_Conversion_Converter:
 
     def process(self):
         all_transactions = list()
-        parse = lambda value: float(re.sub('[a-zA-Z,]', '', value))
+        parse = lambda value: Decimal(re.sub('[a-zA-Z,]', '', value))
         with open(self.filename, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.DictReader(csvfile, delimiter=';', quotechar='"')
             for row in reader:
@@ -42,7 +43,6 @@ class Binance_Conversion_Converter:
 
                         'reference': 'Binance Conversion'
                     })
-                    print(buy_tx.info())
                     all_transactions.append(buy_tx)
                 elif row['Type'] == 'Sell':
                     source_currency = self.currency_map[row['Pair']]
@@ -62,7 +62,6 @@ class Binance_Conversion_Converter:
 
                         'reference': 'Binance Conversion'
                     })
-                    print(sell_tx.info())
                     all_transactions.append(sell_tx)
         return all_transactions
 

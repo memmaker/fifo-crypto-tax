@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 
@@ -47,19 +48,20 @@ class Account:
     def __init__(self, name, initial_funding=0.0):
         self.name = name
         self.initial_funding = initial_funding
-        self.balance = 0.0
+        self.balance = Decimal(0.0)
 
     def add_funds(self, amount, tx_id):
         self.balance += amount
-        print('..added %s to %s account, new balance is %s.' % (amount, self.name, self.balance))
 
     def remove_funds(self, amount):
         self.balance -= amount
-        print('..removed %s from %s account, new balance is %s.' % (amount, self.name, self.balance))
         return False
 
     def info(self):
         return "%s: %s" % (self.name, self.balance)
+
+    def snapshot(self):
+        return (self.name, self.balance)
 
 
 class FifoAccount(Account):
@@ -94,6 +96,7 @@ class FifoAccount(Account):
 
 class ExchangeCalculator:
     def __init__(self, transactions):
+        self.snapshots = dict()
         self.fiat_currency = config['fiat_currency']
         self.transactions = dict()
         self.tax_relevant = dict()
@@ -119,15 +122,15 @@ class ExchangeCalculator:
             auto_reload=True
         )
         tmpl = loader.load('tax_report.html')
-        html_output = tmpl.generate(tax_relevant=self.tax_relevant, totals=self.totals, c=c).render('html', doctype='html')
+        html_output = tmpl.generate(accounts=self.snapshots, tax_relevant=self.tax_relevant, totals=self.totals, c=c).render('html', doctype='html')
 
         with open(os.path.join(output_dir, "report.html"), "w") as file:
             file.write(html_output)
 
     def calculate_totals_per_year(self):
         for year, transactions in self.tax_relevant.items():
-            fees = 0.0
-            wins_losses = 0.0
+            fees = Decimal(0.0)
+            wins_losses = Decimal(0.0)
             for tx in transactions:
                 fees += tx.fees
                 if not tx.long_time or tx.win_or_loss < 0:
@@ -141,7 +144,16 @@ class ExchangeCalculator:
     def process_transactions(self):
         sell_tax_id = 0
         buy_tax_id = 0
+        current_transaction_year = 0
+        self.snapshot_accounts(current_transaction_year)
+
         for tx_id, tx in self.transactions.items():
+
+            tx_year = tx.timestamp.year
+            if tx_year != current_transaction_year:
+                self.snapshot_accounts(current_transaction_year)
+                current_transaction_year = tx_year
+
             list_of_buy_transactions = []
             if tx.source_currency not in self.accounts:
                 self.accounts[tx.source_currency] = FifoAccount(tx.source_currency)
@@ -162,8 +174,6 @@ class ExchangeCalculator:
             if is_sell:
                 # this is sell back to fiat with wins or lossess and thus tax relevant
                 ensure_key(self.tax_relevant, tx.timestamp)
-                print(
-                    "%s: Sold %s %s for %s" % (tx.timestamp, tx.source_amount, tx.source_currency, c(tx.target_amount)))
 
                 for pair in list_of_buy_transactions:
                     amount_of_tx = pair[0]
@@ -182,12 +192,21 @@ class ExchangeCalculator:
                     sell_tax_id += 1
             elif is_buy:
                 ensure_key(self.tax_relevant, tx.timestamp)
-                buy_tax_tx = TransactionWithTaxInfo(buy_tax_id, TaxType.Buy, tx.timestamp, tx.target_currency, 0, tx.exchange_rate, tx.source_amount, tx.target_amount, tx.reference, tx.fees, None)
+                buy_tax_tx = TransactionWithTaxInfo(buy_tax_id, TaxType.Buy, tx.timestamp, tx.target_currency, Decimal(0), tx.exchange_rate, tx.source_amount, tx.target_amount, tx.reference, tx.fees, None)
                 self.tax_relevant[tx.timestamp.year].append(buy_tax_tx)
                 self.buy_map[buy_tax_id] = buy_tax_tx
                 buy_tax_id += 1
             else:
                 print('WARNING! Skipping: %s' % tx.info())
+
+        self.snapshot_accounts(current_transaction_year)
+
+    def snapshot_accounts(self, year):
+        if year not in self.snapshots:
+            self.snapshots[year] = dict()
+        for name, acc in self.accounts.items():
+            self.snapshots[year][acc.name] = Decimal(acc.balance)
+
 
 if __name__ == "__main__":
 

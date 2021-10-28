@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from config import config
 
-c = lambda v: moneyfmt(Decimal(v))
+c = lambda v: moneyfmt(v)
 
 def moneyfmt(value, places=2, curr='', sep='.', dp=',',
              pos='', neg='-', trailneg=''):

@@ -76,6 +76,23 @@
             </tr>
             </tfoot>
         </table>
+        <h3>Konten Ende ${year}</h3>
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th py:for="name, balance in accounts[year].items()">
+                        ${name}
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td py:for="name, balance in accounts[year].items()">
+                        ${c(balance)}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     <div id="footer">
         <hr/>

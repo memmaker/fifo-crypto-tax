@@ -122,7 +122,7 @@ _('drag_drop').ondrop = function(event)
 
         ajax_request.addEventListener('load', function(event){
             var response = JSON.parse(this.responseText);
-            window.location.replace("/report/" + response.report);
+            window.location.href = "/report/" + response.report;
         });
 
         ajax_request.send(form_data);
