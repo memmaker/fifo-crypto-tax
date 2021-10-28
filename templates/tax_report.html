@@ -1,0 +1,84 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:py="http://genshi.edgewall.org/">
+    <style>
+.styled-table {
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+.styled-table thead tr {
+    background-color: #009879;
+    color: #ffffff;
+    text-align: left;
+}
+.styled-table th,
+.styled-table td {
+    padding: 12px 15px;
+}
+.styled-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+}
+
+.styled-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+}
+
+.styled-table tbody tr:last-of-type {
+    border-bottom: 2px solid #009879;
+}
+.styled-table tbody tr.no-tax {
+    font-weight: bold;
+    color: #009879;
+}
+
+    </style>
+    <div class="section_year" py:for="year, transactions in tax_relevant.items()">
+        <h1>Jahr ${year}</h1>
+        <table class="styled-table">
+            <thead>
+            <tr>
+                <th>Nr.</th>
+                <th>Datum</th>
+                <th>Währung</th>
+                <th>Kurs</th>
+                <th>Betrag Fiat</th>
+                <th>Betrag Krypto</th>
+                <th>Gebühren</th>
+                <th>Gewinn / Verlust</th>
+                <th>Börse</th>
+                <th>Quell-Transaktion</th>
+                <th>Haltefrist > 1 J.</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr py:for="tx in transactions" class="$tx.display_class">
+                <td>${tx.display_id}</td>
+                <td>${tx.timestamp.strftime("%d.%m.%Y")}</td>
+                <td>${tx.currency}</td>
+                <td>${round(tx.exchange_rate, 4)}</td>
+                <td>${c(tx.fiat_amount)}</td>
+                <td>${tx.crypto_amount}</td>
+                <td>${c(tx.fees)}</td>
+                <td>${c(tx.win_or_loss)}</td>
+                <td>${tx.reference}</td>
+                <td>${tx.source_id}</td>
+                <td>${'Ja' if tx.long_time else 'Nein'}</td>
+            </tr>
+            </tbody>
+            <tfoot>
+            <tr>
+                <td colspan="6"></td>
+                <td>${c(totals[year]['fees'])}</td>
+                <td>${c(totals[year]['wins_losses'])}</td>
+                <td colspan="2"></td>
+            </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div id="footer">
+        <hr/>
+        <p class="legalese">© 2021 Ruzzoli - IT Solutions</p>
+    </div>
+</html>
