@@ -62,7 +62,6 @@ class Binance_Converter:
 
                         'reference': 'Binance'
                     })
-                    print(sell_tx.info())
                     all_transactions.append(sell_tx)
         return all_transactions
 
