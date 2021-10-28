@@ -2,7 +2,8 @@ import csv
 import datetime
 from decimal import Decimal
 
-from transaction import Transaction
+from transaction import Transaction, ExternalTransaction
+
 
 class BDE_Converter:
 
@@ -63,5 +64,10 @@ class BDE_Converter:
                         'reference': "Bitcoin.de (%s)" % row['Referenz']
                     })
                     all_transactions.append(sell_tx)
+                elif row['Typ'] in ['Einzahlung', 'Auszahlung', 'Netzwerk-Gebühr']:
+                    change_amount = Decimal(row['Zu- / Abgang'])
+                    reference = "Bitcoin.de (%s)" % row['Referenz']
+                    timestamp = datetime.datetime.strptime(row['Datum'], '%Y-%m-%d %H:%M:%S')
+                    all_transactions.append(ExternalTransaction(timestamp, self.currency_map[currency], change_amount, reference))
         return all_transactions
 

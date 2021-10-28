@@ -7,13 +7,14 @@ from binance import Binance_Converter
 from bitcoin_de import BDE_Converter
 from coinbase import Coinbase_Converter
 from config import config
-from transaction import Transaction, c, remove_exponent
+from transaction import Transaction, c, remove_exponent, ExternalTransaction
 from genshi.template import TemplateLoader
 from enum import Enum
 
 class TaxType(Enum):
     Buy = 0
     Sell = 1
+    External = 3
 
 def ensure_key(map, date_of_record):
     year = date_of_record.year
@@ -143,6 +144,7 @@ class ExchangeCalculator:
     def process_transactions(self):
         sell_tax_id = 0
         buy_tax_id = 0
+        external_id = 0
         current_transaction_year = 0
         self.snapshot_accounts(current_transaction_year)
 
@@ -152,6 +154,29 @@ class ExchangeCalculator:
             if tx_year != current_transaction_year:
                 self.snapshot_accounts(current_transaction_year)
                 current_transaction_year = tx_year
+
+            if isinstance(tx, ExternalTransaction):
+                currency = tx.currency
+                if currency not in self.accounts:
+                    self.accounts[currency] = FifoAccount(currency)
+                print(self.accounts[currency].info())
+                change = tx.change_amount
+                if change < Decimal(0):
+                    self.accounts[currency].remove_funds(change.copy_abs())
+                    external_tax_tx = TransactionWithTaxInfo(buy_tax_id, TaxType.External, tx.timestamp, tx.currency,
+                                                             Decimal(0), Decimal(0), Decimal(0),
+                                                             change, tx.reference, Decimal(0), None)
+                    self.tax_relevant[tx.timestamp.year].append(external_tax_tx)
+                    buy_tax_id += 1
+                else:
+                    external_tax_tx = TransactionWithTaxInfo(buy_tax_id, TaxType.External, tx.timestamp, tx.currency,
+                                                        Decimal(0), Decimal(0), Decimal(0),
+                                                        change, tx.reference, Decimal(0), None)
+                    self.accounts[currency].add_funds(change.copy_abs(), buy_tax_id)
+                    self.buy_map[buy_tax_id] = external_tax_tx
+                    self.tax_relevant[tx.timestamp.year].append(external_tax_tx)
+                    buy_tax_id += 1
+                continue
 
             list_of_buy_transactions = []
             if tx.source_currency not in self.accounts:

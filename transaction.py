@@ -55,6 +55,13 @@ def moneyfmt(value, places=2, curr='', sep='.', dp=',',
     build(neg if sign else pos)
     return ''.join(reversed(result))
 
+class ExternalTransaction:
+    def __init__(self, timestamp, currency, change_amount, reference):
+        self.timestamp = timestamp
+        self.reference = reference
+        self.change_amount = change_amount
+        self.currency = currency
+
 class Transaction:
     def __init__(self, tx_data):
         self.timestamp = tx_data['timestamp']
