@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 from binance import Binance_Converter
 from bitcoin_de import BDE_Converter
 from coinbase import Coinbase_Converter
+from custom_conversion import Custom_Converter
 from exchange import ExchangeCalculator
 
 file_mb_max = 10
@@ -32,6 +33,8 @@ def get_type_of_data(filename):
             return 'binance'
         elif first_line.startswith('Timestamp,Transaction Type,'):
             return 'coinbase'
+        elif first_line.startswith('Timestamp;Currency;'):
+            return 'custom'
         else:
             return 'unknown'
 
@@ -44,6 +47,8 @@ def get_transactions_from_file(filename):
         return Binance_Converter(filename).process()
     elif data_type == 'coinbase':
         return Coinbase_Converter(filename).process()
+    elif data_type == 'custom':
+        return Custom_Converter(filename).process()
     else:
         return []
 
@@ -64,10 +69,14 @@ def report_per_user(username):
 
     return {'error': "Couldn't use uploaded data"}
 
+@app.route('/crypto-upload/template.csv')
+def send_upload_template():
+    return send_from_directory('templates', 'data_template.csv')
+
 ## on page '/upload' load display the upload file
 @app.route('/crypto-upload')
 def upload_form():
-    return render_template('upload.html')
+    return send_from_directory('templates', 'upload.html')
 
 @app.route('/crypto-upload', methods=['POST'])
 def upload_file():

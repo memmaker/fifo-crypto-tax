@@ -1,0 +1,3 @@
+Timestamp;Currency;Type;Amount_Crypto;Price_Fiat;Fees_Fiat;Reference
+2021-10-12 16:22:45;btc;Buy;1.5;40000;10;Binance TX 8273654
+2021-10-14 14:43:11;btc;Sell;1.5;45000;12;Binance TX 912087

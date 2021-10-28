@@ -4,7 +4,6 @@ from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 
 from binance import Binance_Converter
-from binance_conversion import Binance_Conversion_Converter
 from bitcoin_de import BDE_Converter
 from coinbase import Coinbase_Converter
 from config import config
@@ -221,14 +220,12 @@ if __name__ == "__main__":
     print('reading binance')
     binance_transactions = Binance_Converter('./data/binance_2021-04-01_2021-10-27.csv').process()
     print('reading binance conversions')
-    binance_conversions = Binance_Conversion_Converter('./data/binance_conversions.csv').process()
+    #binance_conversions = Binance_Conversion_Converter('./data/binance_conversions.csv').process()
 
     tx_list = bitcoin_de_btc_transactions \
               + bitcoin_de_eth_transactions \
               + coinbase_transactions \
-              + binance_transactions \
-              + binance_conversions
-
+              + binance_transactions
     #bnb_txs = list(filter(lambda x: x.source_currency == 'bnb' or x.target_currency == 'bnb', tx_list))
     #two_years = relativedelta(years=3)
     #threshold = datetime.datetime.now() - two_years

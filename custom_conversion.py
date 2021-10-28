@@ -6,18 +6,11 @@ from config import config
 from transaction import Transaction
 import re
 
-class Binance_Conversion_Converter:
+
+class Custom_Converter:
 
     def __init__(self, path_to_csv):
         self.filename = path_to_csv
-        self.currency_map = {
-            'BTC': 'btc',
-            'DOGEEUR': 'doge',
-            'AVAXBTC': 'avax',
-            'DOTBTC': 'dot',
-            'BNBBTC': 'bnb',
-            'ADABTC': 'ada',
-        }
 
     def process(self):
         all_transactions = list()
@@ -27,40 +20,39 @@ class Binance_Conversion_Converter:
             for row in reader:
                 if row['Type'] == 'Buy':
                     source_currency = config['fiat_currency']
-                    target_currency = self.currency_map[row['Pair']]
-
-                    source_amount = parse(row['Price'])
-                    target_amount = parse(row['Amount'])
+                    target_currency = row['Currency']
+                    source_amount = parse(row['Price_Fiat'])
+                    target_amount = parse(row['Amount_Crypto'])
                     buy_tx = Transaction({
-                        'timestamp':  datetime.strptime(row['Timestamp'], "%m/%d/%y %I:%M %p"),
+                        'timestamp':  datetime.strptime(row['Timestamp'], "%Y-%m-%d %H:%M:%S"),
 
                         'source_amount': source_amount,
                         'source_currency': source_currency,
 
                         'target_amount': target_amount,
                         'target_currency': target_currency,
-                        'fees': parse(row['Fees']),
+                        'fees': parse(row['Fees_Fiat']),
 
-                        'reference': 'Binance Conversion'
+                        'reference': row['Reference']
                     })
                     all_transactions.append(buy_tx)
                 elif row['Type'] == 'Sell':
-                    source_currency = self.currency_map[row['Pair']]
+                    source_currency = row['Currency']
                     target_currency = config['fiat_currency']
 
-                    source_amount = parse(row['Amount'])
-                    target_amount = parse(row['Price'])  # does not contain fees
+                    source_amount = parse(row['Amount_Crypto'])
+                    target_amount = parse(row['Price_Fiat'])  # does not contain fees
                     sell_tx = Transaction({
-                        'timestamp': datetime.strptime(row['Timestamp'], "%m/%d/%y %I:%M %p"),
+                        'timestamp': datetime.strptime(row['Timestamp'], "%Y-%m-%d %H:%M:%S"),
 
                         'source_amount': source_amount,
                         'source_currency': source_currency,
 
                         'target_amount': target_amount,
                         'target_currency': target_currency,
-                        'fees': parse(row['Fees']),
+                        'fees': parse(row['Fees_Fiat']),
 
-                        'reference': 'Binance Conversion'
+                        'reference': row['Reference']
                     })
                     all_transactions.append(sell_tx)
         return all_transactions
