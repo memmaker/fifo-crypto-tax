@@ -207,14 +207,16 @@ class ExchangeCalculator:
                     amount_of_tx = pair[0]
                     buy_tx_id = pair[1]
                     buy_tx = self.buy_map[buy_tx_id]
+                    fraction_of_sell_used = amount_of_tx / tx.source_amount
 
                     buy_price = amount_of_tx * buy_tx.exchange_rate
                     sell_price = amount_of_tx * tx.exchange_rate
 
                     delta_amount = sell_price - buy_price
+                    part_of_fees = tx.fees * fraction_of_sell_used
                     tax_tx = TransactionWithTaxInfo(sell_tax_id, TaxType.Verk, tx.timestamp, tx.source_currency, delta_amount,
                                                     tx.exchange_rate,
-                                                    sell_price, amount_of_tx, tx.reference, tx.fees,
+                                                    sell_price, amount_of_tx, tx.reference, part_of_fees,
                                                     buy_tx)
                     self.tax_relevant[tx.timestamp.year].append(tax_tx)
                     sell_tax_id += 1

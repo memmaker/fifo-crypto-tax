@@ -19,13 +19,15 @@ class BDE_Converter:
                 if row['Typ'] == 'Kauf':
                     source_currency = config['fiat_currency']
                     target_currency = currency
+                    target_amount = Decimal(row['%s nach Bitcoin.de-Gebühr' % currency])
 
                     source_amount = Decimal(row['Menge vor Gebühr'])
-                    target_amount = Decimal(row['%s nach Bitcoin.de-Gebühr' % currency])
+
                     amount_before_fee = Decimal(row['%s vor Gebühr' % currency])
-                    fee_target_currency = amount_before_fee - target_amount
+                    fee_crypto = amount_before_fee - target_amount
                     exchange_rate = Decimal(row['Kurs'])
-                    fees = fee_target_currency * exchange_rate
+                    fees = fee_crypto * exchange_rate
+
                     buy_tx = Transaction({
                         'timestamp':  datetime.datetime.strptime(row['Datum'], '%Y-%m-%d %H:%M:%S'),
 
@@ -45,8 +47,9 @@ class BDE_Converter:
 
                     source_amount = Decimal(row['%s vor Gebühr' % currency])
                     target_amount = Decimal(row['Menge nach Bitcoin.de-Gebühr'])  # does not contain fees
-                    amount_before_fee = Decimal(row['Menge vor Gebühr'])
-                    fees = amount_before_fee - target_amount
+                    fiat_after_fee = target_amount
+                    fiat_before_fee = Decimal(row['Menge vor Gebühr'])
+                    fees = fiat_before_fee - fiat_after_fee
 
                     sell_tx = Transaction({
                         'timestamp': datetime.datetime.strptime(row['Datum'], '%Y-%m-%d %H:%M:%S'),
